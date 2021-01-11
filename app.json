@@ -1,10 +1,81 @@
-import merge from 'webpack-merge';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 import path from 'path';
-import WebpackDevAppConfiguration from './webpack.app.dev.babel';
+import { StatsWriterPlugin } from 'webpack-stats-plugin';
+import webpackNodeExternals from 'webpack-node-externals';
+import { BannerPlugin, DefinePlugin } from 'webpack';
+import { description, name, version } from '../../package.json';
 
-export default merge(
-    WebpackDevAppConfiguration,
-    {
-        mode: 'production'
-    }
-);
+export default {
+    target: 'node',
+    mode: 'production',
+    context: path.join(__dirname, '../../src'),
+    externals: [
+        webpackNodeExternals({
+            whitelist: [/\.(css|less)$/i]
+        }),
+        function (context, request, callback) {
+            if (/\/deployments\/config\/app\.json$/.test(request)) {
+                return callback(null, 'commonjs /deployments/config/app/app.json');
+            }
+            if (/\/deployments\/config\/server\.json$/.test(request)) {
+                return callback(null, 'commonjs /deployments/config/app/server.json');
+            }
+            callback();
+        }
+    ],
+    node: {
+        __dirname: false,
+        __filename: false
+    },
+    entry: {
+        index: './server/index.js'
+    },
+    output: {
+        path: path.join(__dirname, '../../dist'),
+        filename: '[name].js'
+    },
+    module: {
+        rules: [
+            {
+                test: /\.(js|jsx)$/,
+                loader: 'babel-loader',
+                exclude: /node_modules/
+            },
+            {
+                test: /\.ico$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[name].[ext]'
+                    }
+                }
+            },
+            { test: /\.crt$/, use: { loader: 'raw-loader' } },
+            { test: /\.css$/, use: { loader: 'ignore-loader' } },
+            { test: /\.less$/, use: { loader: 'ignore-loader' } },
+            { test: /\.(png|jpg)$/, use: { loader: 'ignore-loader' } },
+            { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, use: { loader: 'ignore-loader' } },
+            { test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/, use: { loader: 'ignore-loader' } },
+            { test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, use: { loader: 'ignore-loader' } },
+            { test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, use: { loader: 'ignore-loader' } }
+        ]
+    },
+    plugins: [
+        new BannerPlugin({ banner: '(c) Walgreens Boots Alliance. All rights reserved.' }),
+        new DefinePlugin({
+            'process.env.APPDESCRIPTION': JSON.stringify(description),
+            'process.env.APPNAME': JSON.stringify(name),
+            'process.env.APPVERSION': JSON.stringify(version)
+        }),
+        new CopyWebpackPlugin([
+            '../package.json',
+            '../package-lock.json',
+            {
+                from: '../config',
+                to: 'config'
+                
+            }
+        ]),
+        new StatsWriterPlugin({ filename: './stats-server.json', stats: { all: false, assets: true } })
+    ]
+};
