@@ -1,30 +1,115 @@
-{
-  "expo": {
-    "name": "rn-complete guide",
-    "slug": "rn-complete-guide",
-    "privacy": "public",
-    "sdkVersion": "35.0.0",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+import path from 'path';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { BannerPlugin } from 'webpack';
+import { StatsWriterPlugin } from 'webpack-stats-plugin';
+
+export default {
+    target: 'web',
+    mode: 'development',
+    context: path.join(__dirname, '../../src'),
+    entry: {
+        app: './app/index.jsx'
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
+    output: {
+        path: path.join(__dirname, '../../dist/assets'),
+        publicPath: '/findcareadminui/assets/',
+        filename: 'scripts/[name].[hash].js'
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true
-    }
-  }
-}
+    devtool: 'inline-source-map',
+    module: {
+        rules: [
+            {
+                test: /\.(js|jsx)$/,
+                exclude: /node_modules/,
+                loader: 'babel-loader'
+            },
+            {
+                test: /\.css$/,
+                use: [
+                    {
+                        loader: MiniCssExtractPlugin.loader,
+                        options: {
+                            //publicPath: 'styles/',
+                            hmr: process.env.NODE_ENV === 'development',
+                        },
+                    },
+                    'css-loader'
+                ]
+            },
+            {
+                test: /\.less$/,
+                use: [
+                    {
+                        loader: MiniCssExtractPlugin.loader,
+                        options: {
+                            //publicPath: 'styles/',
+                            hmr: process.env.NODE_ENV === 'development',
+                        },
+                    },
+                    'css-loader',
+                    'less-loader'
+                ]
+            },
+            {
+                test: /\.(png|jpg)$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: 'images/[hash].[ext]'
+                    }
+                }
+            },
+            {
+                test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: 'fonts/[hash].[ext]'
+                    }
+                }
+            },
+            {
+                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'url-loader',
+                    options: {
+                        name: 'fonts/[hash].[ext]',
+                        limit: 5000,
+                        mimetype: 'application/x-font-woff'
+                    }
+                }
+            },
+            {
+                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'url-loader',
+                    options: {
+                        name: 'fonts/[hash].[ext]',
+                        limit: 10000,
+                        mimetype: 'application/octet-stream'
+                    }
+                }
+            },
+            {
+                test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'url-loader',
+                    options: {
+                        name: 'fonts/[hash].[ext]',
+                        limit: 10000,
+                        mimetype: 'image/svg+xml'
+                    }
+                }
+            }
+        ]
+    },
+    plugins: [
+        new BannerPlugin({ banner: '(c) Walgreens Boots Alliance. All rights reserved.' }),
+        new MiniCssExtractPlugin({
+            filename: 'styles/[name].[hash].css',
+            //chunkFilename: '[id].css',
+            ignoreOrder: false, // Enable to remove warnings about conflicting order
+        }),
+        new StatsWriterPlugin({ filename: '../stats-app.json' })
+    ]
+};
